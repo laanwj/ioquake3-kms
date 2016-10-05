@@ -369,11 +369,15 @@ void GLimp_Init(void)
 				HeightOfScreen(screen));
 		glConfig.vidWidth = WidthOfScreen(screen);
 		glConfig.vidHeight = HeightOfScreen(screen);
-	}
-	else
-	{
-		glConfig.vidWidth  = 800;
-		glConfig.vidHeight = 480;
+	} else {
+		EGLint ewidth, eheight;
+		if (!eglQuerySurface(eglDisplay, eglSurface, EGL_HEIGHT, &eheight))
+			GLimp_HandleError();
+		if (!eglQuerySurface(eglDisplay, eglSurface, EGL_WIDTH, &ewidth))
+			GLimp_HandleError();
+		ri.Printf(PRINT_ALL, "egl: Screen size %i by %i\n", ewidth, eheight);
+		glConfig.vidWidth  = ewidth;
+		glConfig.vidHeight = eheight;
 	}
 	
 	glConfig.isFullscreen = r_fullscreen->integer;	
