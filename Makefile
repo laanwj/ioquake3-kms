@@ -336,7 +336,8 @@ ifeq ($(PLATFORM),linux)
   THREAD_LIBS=-lpthread
   LIBS=-ldl -lm
 
-  CLIENT_LIBS=$(SDL_LIBS) -lGL
+  BASE_CFLAGS += -DPANDORA -g -I/usr/include/drm
+  CLIENT_LIBS = $(SDL_LIBS) -lEGL -lGLESv1_CM -lX11 -lgbm -ldrm
 
   ifeq ($(ARCH),arm)
     CLIENT_LIBS = $(SDL_LIBS) -lGLESv1_CM -lX11
@@ -1588,6 +1589,7 @@ endif
 
 Q3POBJ += \
    $(B)/client/egl_glimp.o \
+   $(B)/client/egl_kms.o \
    $(B)/client/egl_input.o \
    $(B)/client/pnd_event.o
 #  $(B)/client/sdl_glimp.o

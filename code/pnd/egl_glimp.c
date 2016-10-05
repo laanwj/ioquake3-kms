@@ -12,10 +12,13 @@
 #include <GLES/gl.h>
 
 #include "egl_glimp.h"
+#include "egl_kms.h"
 #include "../client/client.h"
 #include "../renderer/tr_local.h"
 
 Display *dpy = NULL;
+NativeDisplayType nativeDisplay = NULL;
+EGLNativeWindowType nativeWindow = 0;
 Window win = 0;
 EGLContext eglContext = NULL;
 EGLDisplay eglDisplay = NULL;
@@ -165,6 +168,7 @@ static void make_window(Display * dpy, Screen * scr, EGLDisplay eglDisplay,
 		XDefineCursor(dpy, win, Sys_XCreateNullCursor(dpy, win));
 
 		XFlush(dpy);
+		nativeWindow = (EGLNativeWindowType) win;
 	}
 
 	if (!eglGetConfigs(eglDisplay, configs, MAX_NUM_CONFIGS, &config_count))
@@ -176,22 +180,11 @@ static void make_window(Display * dpy, Screen * scr, EGLDisplay eglDisplay,
 
 	for (i = 0; i < config_count; i++)
 	{
-		if (pandora_driver_mode_x11)
-		{
-			if ((eglSurface =
-			    eglCreateWindowSurface(eglDisplay, configs[i],
-						    (NativeDisplayType) win,
-						    NULL)) != EGL_NO_SURFACE)
-				break;
-		}
-		else
-		{
-			if ((eglSurface =
-			    eglCreateWindowSurface( eglDisplay, configs[i],
-						    (NativeDisplayType)NULL,
-						    NULL)) != EGL_NO_SURFACE)
-				break;
-		}
+		if ((eglSurface =
+		    eglCreateWindowSurface(eglDisplay, configs[i],
+					    nativeWindow,
+					    NULL)) != EGL_NO_SURFACE)
+			break;
 	}
 	if (eglSurface == EGL_NO_SURFACE)
 		GLimp_HandleError();
@@ -356,16 +349,17 @@ void GLimp_Init(void)
 		screen = XDefaultScreenOfDisplay(dpy);
 		vis = DefaultVisual(dpy, DefaultScreen(dpy));
 
-		eglDisplay = eglGetDisplay((NativeDisplayType) dpy);
+		nativeDisplay = (NativeDisplayType) dpy;
 	}
 	else
 	{
 		dpy = NULL;
-		eglDisplay = eglGetDisplay((NativeDisplayType)NULL );
+		nativeDisplay = (NativeDisplayType) NULL;
 	}
 	
-		if (!eglInitialize(eglDisplay, &major, &minor))
-			GLimp_HandleError();	
+	eglDisplay = eglGetDisplay(nativeDisplay);
+	if (!eglInitialize(eglDisplay, &major, &minor))
+		GLimp_HandleError();
 	
 	make_window(dpy, screen, eglDisplay, &eglSurface, &eglContext);
 

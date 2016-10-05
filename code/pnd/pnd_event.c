@@ -186,6 +186,7 @@ void PND_ReadEvents( int fd, int device )
 	}
 }
 
+/* See /usr/include/linux/input-event-codes.h */
 void PND_CheckEvent( struct input_event *event, int device )
 {
 	int sym, value;
