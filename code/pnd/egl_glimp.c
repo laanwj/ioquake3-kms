@@ -51,8 +51,12 @@ static void GLimp_HandleError(void)
 {
 	GLint err = eglGetError();
 
-	fprintf(stderr, "%s: 0x%04x: %s\n", __func__, err,
-		GLimp_StringErrors[err]);
+	if (err < (sizeof(GLimp_StringErrors)/sizeof(char*))) {
+		fprintf(stderr, "%s: 0x%04x: %s\n", __func__, err,
+			GLimp_StringErrors[err]);
+	} else {
+		fprintf(stderr, "%s: 0x%04x: Unknown EGL error\n", __func__, err);
+	}
 	assert(0);
 }
 
@@ -87,6 +91,27 @@ static void GLimp_DisableComposition(void)
 		   (XEvent *) & xclient);
 }
 
+static Cursor Sys_XCreateNullCursor(Display *display, Window root)
+{
+	Pixmap cursormask;
+	XGCValues xgc;
+	GC gc;
+	XColor dummycolour;
+	Cursor cursor;
+
+	cursormask = XCreatePixmap(display, root, 1, 1, 1/*depth*/);
+	xgc.function = GXclear;
+	gc =  XCreateGC(display, cursormask, GCFunction, &xgc);
+	XFillRectangle(display, cursormask, gc, 0, 0, 1, 1);
+	dummycolour.pixel = 0;
+	dummycolour.red = 0;
+	dummycolour.flags = 04;
+	cursor = XCreatePixmapCursor(display, cursormask, cursormask,
+	                             &dummycolour,&dummycolour, 0,0);
+	XFreePixmap(display,cursormask);
+	XFreeGC(display,gc);
+	return cursor;
+}
 
 #define MAX_NUM_CONFIGS 4
 
@@ -136,6 +161,8 @@ static void make_window(Display * dpy, Screen * scr, EGLDisplay eglDisplay,
 		GLimp_DisableComposition();
 		XMapWindow(dpy, win);
 		GLimp_DisableComposition();
+
+		XDefineCursor(dpy, win, Sys_XCreateNullCursor(dpy, win));
 
 		XFlush(dpy);
 	}
@@ -316,6 +343,7 @@ void GLimp_Init(void)
 
 	cvarPndMode = ri.Cvar_Get("x11", "0", 0);
 	pandora_driver_mode_x11 = cvarPndMode->value;
+	ri.Printf(PRINT_ALL, "X11 mode: %i\n", pandora_driver_mode_x11);
 	
 	bzero(&glConfig, sizeof(glConfig));
 
