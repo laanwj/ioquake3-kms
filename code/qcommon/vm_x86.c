@@ -90,7 +90,7 @@ void AsmCall(void);
 static void (*const asmCallPtr)(void) = AsmCall;
 
 
-static	int		callMask = 0;
+static	int __attribute__((used))		callMask = 0;
 
 static	int	instruction, pass;
 static	int	lastConst = 0;
