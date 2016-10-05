@@ -214,6 +214,7 @@ void PND_CheckEvent( struct input_event *event, int device )
 				case 106:
 					sym = K_RIGHTARROW;
 					break;
+#if 0
 				case 139:		// menu
 					sym = K_F1;
 					break;
@@ -247,6 +248,13 @@ void PND_CheckEvent( struct input_event *event, int device )
 					sym = K_MOUSE1;
 					break;
 				case 97:
+					sym = K_MOUSE2;
+					break;
+#endif
+				case 0x110:
+					sym = K_MOUSE1;
+					break;
+				case 0x111:
 					sym = K_MOUSE2;
 					break;
 				default:
