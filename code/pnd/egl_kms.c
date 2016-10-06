@@ -274,7 +274,7 @@ int kms_setup(const char *drm_device, const char *gbm_device, NativeDisplayType 
 		printf("failed to initialize GBM\n");
 		return ret;
 	}
-
+#if 0
 	state.bo = gbm_surface_lock_front_buffer(gbm.surface);
 	fb = drm_fb_get_from_bo(state.bo);
 
@@ -285,6 +285,7 @@ int kms_setup(const char *drm_device, const char *gbm_device, NativeDisplayType 
 		printf("failed to set mode: %s\n", strerror(errno));
 		return ret;
 	}
+#endif
 	*native_display = (NativeDisplayType)gbm.dev;
 	*native_window = (EGLNativeWindowType)gbm.surface;
 	return 0;
