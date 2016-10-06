@@ -252,7 +252,7 @@ static void page_flip_handler(int fd, unsigned int frame,
 	*waiting_for_flip = 0;
 }
 
-int kms_setup(const char *drm_device, const char *gbm_device, void **native_display)
+int kms_setup(const char *drm_device, const char *gbm_device, NativeDisplayType *native_display, EGLNativeWindowType *native_window)
 {
 	struct drm_fb *fb;
 	int ret;
@@ -285,7 +285,8 @@ int kms_setup(const char *drm_device, const char *gbm_device, void **native_disp
 		printf("failed to set mode: %s\n", strerror(errno));
 		return ret;
 	}
-	*native_display = gbm.dev;
+	*native_display = (NativeDisplayType)gbm.dev;
+	*native_window = (EGLNativeWindowType)gbm.surface;
 	return 0;
 }
 

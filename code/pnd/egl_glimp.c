@@ -17,9 +17,9 @@
 #include "../renderer/tr_local.h"
 
 Display *dpy = NULL;
+Window win = 0;
 NativeDisplayType nativeDisplay = NULL;
 EGLNativeWindowType nativeWindow = 0;
-Window win = 0;
 EGLContext eglContext = NULL;
 EGLDisplay eglDisplay = NULL;
 EGLSurface eglSurface = NULL;
@@ -354,7 +354,10 @@ void GLimp_Init(void)
 	else
 	{
 		dpy = NULL;
-		nativeDisplay = (NativeDisplayType) NULL;
+		if (kms_setup(NULL, NULL, &nativeDisplay, &nativeWindow)) {
+			printf("Error: couldn't open KMS\n");
+			assert(0);
+		}
 	}
 	
 	eglDisplay = eglGetDisplay(nativeDisplay);
@@ -428,6 +431,9 @@ void GLimp_EndFrame(void)
 
 	if (pandora_driver_mode_x11)
 		XForceScreenSaver(dpy, ScreenSaverReset);
+	else
+		kms_post_swap();
+
 
 }
 
