@@ -27,7 +27,18 @@ Set these in `~/.q3a/baseq3/q3config.cfg`:
 ```
 seta usbm "10"
 seta usbk "4"
-seta x11 "0"
 ```
 E.g. `10` for `input10`, `4` for `input4` etc.
+
+Make sure that the user has direct access to the input devices
+(group `input` in many distributions).
+
+X11 mode
+----------
+Optionally (for debugging) the client can run in X11 mode.
+This will render into a full-screen X window instead of KMS.
+```
+seta x11 "1"
+```
+Note that this does not affect the input subsystem, just the rendering.
 
