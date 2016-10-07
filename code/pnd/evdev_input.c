@@ -12,7 +12,6 @@
 #include "../renderer/tr_local.h"
 #include "../qcommon/q_shared.h"
 
-static qboolean mouse_active = qfalse;
 static qboolean mouse_avail = qfalse;
 
 cvar_t *in_nograb;
@@ -20,26 +19,10 @@ static cvar_t *in_mouse;
 
 void IN_ActivateMouse(void)
 {
-	if (!mouse_avail || !dpy || !win)
-		return;
-
-	if (!mouse_active) {
-		if (!in_nograb->value)
-			//install_grabs();
-		mouse_active = qtrue;
-	}
 }
 
 void IN_DeactivateMouse(void)
 {
-	if (!mouse_avail || !dpy || !win)
-		return;
-
-	if (mouse_active) {
-		if (!in_nograb->value)
-			//uninstall_grabs();
-		mouse_active = qfalse;
-	}
 }
 
 void IN_Frame(void)

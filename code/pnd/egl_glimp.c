@@ -3,10 +3,12 @@
 #include <stdlib.h>
 #include <sys/param.h>
 
+#ifdef USE_X11
 #include <X11/keysym.h>
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#endif
 
 #include <EGL/egl.h>
 #include <GLES/gl.h>
@@ -16,8 +18,10 @@
 #include "../client/client.h"
 #include "../renderer/tr_local.h"
 
+#ifdef USE_X11
 Display *dpy = NULL;
 Window win = 0;
+#endif
 NativeDisplayType nativeDisplay = NULL;
 EGLNativeWindowType nativeWindow = 0;
 EGLContext eglContext = NULL;
@@ -27,10 +31,12 @@ EGLSurface eglSurface = NULL;
 int pandora_driver_mode_x11 = 0;
 cvar_t* cvarPndMode;
 
+#ifdef USE_X11
 int Sys_XTimeToSysTime(Time xtime)
 {
 	return Sys_Milliseconds();
 }
+#endif
 
 static char *GLimp_StringErrors[] = {
 	"EGL_SUCCESS",
@@ -63,6 +69,7 @@ static void GLimp_HandleError(void)
 	assert(0);
 }
 
+#ifdef USE_X11
 #define _NET_WM_STATE_REMOVE        0	/* remove/unset property */
 #define _NET_WM_STATE_ADD           1	/* add/set property */
 #define _NET_WM_STATE_TOGGLE        2	/* toggle property  */
@@ -115,6 +122,7 @@ static Cursor Sys_XCreateNullCursor(Display *display, Window root)
 	XFreeGC(display,gc);
 	return cursor;
 }
+#endif
 
 #define MAX_NUM_CONFIGS 4
 
@@ -122,16 +130,23 @@ static Cursor Sys_XCreateNullCursor(Display *display, Window root)
  * Create an RGB, double-buffered window.
  * Return the window and context handles.
  */
+#ifdef USE_X11
 static void make_window(Display * dpy, Screen * scr, EGLDisplay eglDisplay,
 			EGLSurface * winRet, EGLContext * ctxRet)
+#else
+static void make_window(EGLDisplay eglDisplay,
+			EGLSurface * winRet, EGLContext * ctxRet)
+#endif
 {
 	EGLSurface eglSurface = EGL_NO_SURFACE;
 	EGLContext eglContext;
 	EGLConfig configs[MAX_NUM_CONFIGS];
 	EGLint config_count;
+#ifdef USE_X11
 	XWindowAttributes WinAttr;
 	int XResult = BadImplementation;
 	int blackColour;
+#endif
 	EGLint cfg_attribs[] = {
 		/* RGB565 */
 		EGL_BUFFER_SIZE, 16,
@@ -148,6 +163,7 @@ static void make_window(Display * dpy, Screen * scr, EGLDisplay eglDisplay,
 	};
 	EGLint i;
 
+#ifdef USE_X11
 	if (pandora_driver_mode_x11)
 	{
 		blackColour = BlackPixel(dpy, DefaultScreen(dpy));
@@ -170,6 +186,7 @@ static void make_window(Display * dpy, Screen * scr, EGLDisplay eglDisplay,
 		XFlush(dpy);
 		nativeWindow = (EGLNativeWindowType) win;
 	}
+#endif
 
 	if (!eglGetConfigs(eglDisplay, configs, MAX_NUM_CONFIGS, &config_count))
 		GLimp_HandleError();
@@ -328,18 +345,27 @@ static void GLimp_InitExtensions( void )
 
 void GLimp_Init(void)
 {
+#ifdef USE_X11
 	Screen *screen = NULL;
 	Visual *vis;
+#endif
 	EGLint major, minor;
 
 	ri.Printf(PRINT_ALL, "Initializing OpenGL subsystem\n");
 
 	cvarPndMode = ri.Cvar_Get("x11", "0", 0);
 	pandora_driver_mode_x11 = cvarPndMode->value;
-	ri.Printf(PRINT_ALL, "X11 mode: %i\n", pandora_driver_mode_x11);
+#ifndef USE_X11
+	if (pandora_driver_mode_x11)
+	{
+		ri.Printf(PRINT_ALL, "X11 mode not compiled in, cannot enable\n");
+		assert(0);
+	}
+#endif
 	
 	bzero(&glConfig, sizeof(glConfig));
 
+#ifdef USE_X11
 	if (pandora_driver_mode_x11)
 	{
 		if (!(dpy = XOpenDisplay(NULL))) {
@@ -352,8 +378,8 @@ void GLimp_Init(void)
 		nativeDisplay = (NativeDisplayType) dpy;
 	}
 	else
+#endif
 	{
-		dpy = NULL;
 		if (kms_setup(NULL, NULL, &nativeDisplay, &nativeWindow)) {
 			printf("Error: couldn't open KMS\n");
 			assert(0);
@@ -363,16 +389,21 @@ void GLimp_Init(void)
 	eglDisplay = eglGetDisplay(nativeDisplay);
 	if (!eglInitialize(eglDisplay, &major, &minor))
 		GLimp_HandleError();
-	
+#ifdef USE_X11
 	make_window(dpy, screen, eglDisplay, &eglSurface, &eglContext);
-
+#else
+	make_window(eglDisplay, &eglSurface, &eglContext);
+#endif
+#ifdef USE_X11
 	if (pandora_driver_mode_x11)
 	{
 		XMoveResizeWindow(dpy, win, 0, 0, WidthOfScreen(screen),
 				HeightOfScreen(screen));
 		glConfig.vidWidth = WidthOfScreen(screen);
 		glConfig.vidHeight = HeightOfScreen(screen);
-	} else {
+	} else
+#endif
+	{
 		EGLint ewidth, eheight;
 		if (!eglQuerySurface(eglDisplay, eglSurface, EGL_HEIGHT, &eheight))
 			GLimp_HandleError();
@@ -428,10 +459,11 @@ void GLimp_EndFrame(void)
 	if (Q_stricmp(r_drawBuffer->string, "GL_FRONT") != 0) {
 		eglSwapBuffers(eglDisplay, eglSurface);
 	}
-
+#ifdef USE_X11
 	if (pandora_driver_mode_x11)
 		XForceScreenSaver(dpy, ScreenSaverReset);
 	else
+#endif
 		kms_post_swap();
 
 
@@ -445,12 +477,14 @@ void GLimp_Shutdown(void)
 	eglDestroySurface(eglDisplay, eglSurface);
 	eglMakeCurrent(eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 	eglTerminate(eglDisplay);
-
+#ifdef USE_X11
 	if (pandora_driver_mode_x11)
 	{
 		XDestroyWindow(dpy, win);
 		XCloseDisplay(dpy);
-	} else {
+	} else
+#endif
+	{
 		kms_teardown();
 	}
 }

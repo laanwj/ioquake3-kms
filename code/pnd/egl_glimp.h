@@ -10,9 +10,11 @@
 #include <stdlib.h>
 #include <sys/param.h>
 
+#ifdef USE_X11
 #include <X11/keysym.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#endif
 
 #include <EGL/egl.h>
 #include <GLES/gl.h>
@@ -40,12 +42,9 @@
 #define GLAPIENTRYP GLAPIENTRY *
 #endif
 
-extern Display *dpy;
-extern Window win;
-extern EGLContext eglContext;
-extern EGLDisplay eglDisplay;
-extern EGLSurface eglSurface;
+#ifdef USE_X11
 int Sys_XTimeToSysTime(Time xtime);
+#endif
 void GLimp_Init(void);
 void GLimp_LogComment(char *comment);
 void GLimp_EndFrame(void);

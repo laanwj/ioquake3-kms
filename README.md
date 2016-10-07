@@ -37,6 +37,10 @@ X11 mode
 ----------
 Optionally (for debugging) the client can run in X11 mode.
 This will render into a full-screen X window instead of KMS.
+
+The option will only be effective if the client was built with `USE_X11`
+compilation flag.
+
 ```
 seta x11 "1"
 ```
