@@ -8,44 +8,77 @@
 cvar_t* cvarKey;
 cvar_t* cvarMouse;
 
-unsigned char keymap[128] =
+/* See linux/input-event-codes.h */
+keyNum_t keymap[128] =
 {
-    0,  27, '1', '2', '3', '4', '5', '6', '7', '8',	/* 9 */
-  '9', '0', '-', '=', K_BACKSPACE,	/* Backspace */
-  K_TAB,			/* Tab */
-  'q', 'w', 'e', 'r',	/* 19 */
-  't', 'y', 'u', 'i', 'o', 'p', '[', ']', K_ENTER,	/* Enter key */
-    K_CTRL,			/* 29   - Control */
-  'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';',	/* 39 */
- '\'', '`',   K_SHIFT,		/* Left shift */
- '\\', 'z', 'x', 'c', 'v', 'b', 'n',			/* 49 */
-  'm', ',', '.', '/',   K_SHIFT,				/* Right shift */
-  '*',
-    K_ALT,	/* Alt */
-  K_SPACE,	/* Space bar */
-    0,	/* Caps lock */
-    K_F1,	/* 59 - F1 key ... > */
-    K_F2,   K_F3,   K_F4,   K_F5,   K_F6,   K_F7,   K_F8,   K_F9,
-    K_F10,	/* < ... F10 */
-    0,	/* 69 - Num lock*/
-    0,	/* Scroll Lock */
-    K_HOME,	/* Home key */
-    K_UPARROW,	/* Up Arrow */
-    K_PGUP,	/* Page Up */
-  '-',
-    K_LEFTARROW,	/* Left Arrow */
-    0,
-    K_RIGHTARROW,	/* Right Arrow */
-  '+',
-    K_END,	/* 79 - End key*/
-    K_DOWNARROW,	/* Down Arrow */
-    K_PGDN,	/* Page Down */
-    K_INS,	/* Insert Key */
-    K_DEL,	/* Delete Key */
-    0,   0,   0,
-    K_F11,	/* F11 Key */
-    K_F12,	/* F12 Key */
-    0,	/* All other keys are undefined */
+    0,			/* 0 - Reserved */
+    K_ESCAPE,		/* 1 - Escape */
+    '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', /* 2..13 */
+    K_BACKSPACE,	/* 14 - Backspace */
+    K_TAB,		/* 15 - Tab */
+    'q', 'w', 'e', 'r',	't', 'y', 'u', 'i', 'o', 'p', '[', ']', /* 16..27 */
+    K_ENTER,		/* 28 - Enter */
+    K_CTRL,		/* 29 - Left Control */
+    'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', '`', /* 30..41 */
+    K_SHIFT,		/* 42 - Left shift */
+    '\\', 'z', 'x', 'c', 'v', 'b', 'n',	'm', ',', '.', '/', /* 43..53 */
+    K_SHIFT,		/* 54 - Right shift */
+    K_KP_STAR,		/* 55 - Keypad asterisk */
+    K_ALT,		/* 56 - Left alt */
+    K_SPACE,		/* 57 - Space bar */
+    K_CAPSLOCK,		/* 58 - Caps lock */
+    K_F1, K_F2, K_F3, K_F4, K_F5, K_F6, K_F7, K_F8, K_F9, K_F10, /* 59..68 */
+    K_KP_NUMLOCK,	/* 69 - Num lock*/
+    K_SCROLLOCK,	/* 70 - Scroll Lock */
+    K_KP_HOME,		/* 71 - Keypad Home key / 7 */
+    K_KP_UPARROW,	/* 72 - Keypad Up Arrow / 8 */
+    K_KP_PGUP,		/* 73 - Keypad Page Up / 9 */
+    K_KP_MINUS,		/* 74 - Keypad - */
+    K_KP_LEFTARROW,	/* 75 - Keypad Left Arrow / 4 */
+    K_KP_5,		/* 76 - Keypad 5 */
+    K_KP_RIGHTARROW,	/* 77 - Keypad Right Arrow / 6 */
+    K_KP_PLUS,		/* 78 - Keypad + */
+    K_KP_END,		/* 79 - Keypad End key / 1 */
+    K_KP_DOWNARROW,	/* 80 - Keypad Down Arrow / 2 */
+    K_KP_PGDN,		/* 81 - Keypad Page Down / 3 */
+    K_KP_INS,		/* 82 - Keypad Insert Key / 0 */
+    K_KP_DEL,		/* 83 - Keypad Delete Key / . */
+    0,   0,   0,	/* 84, 85, 86 */
+    K_F11,		/* 87 - F11 Key */
+    K_F12,		/* 88 - F12 Key */
+    0, 0, 0, 0, 0, 0, 0,/* 89 - 95 */
+    K_KP_ENTER,		/* 96 - Keypad Enter */
+    K_CTRL,		/* 97 - Right Control */
+    K_KP_SLASH,		/* 98 - Keypad Slash */
+    0,			/* 99 - Sysrq */
+    K_ALT,		/* 100 - Right Alt */
+    10,			/* 101 - Line Feed */
+    K_HOME,		/* 102 - Home */
+    K_UPARROW,		/* 103 - Up */
+    K_PGUP,		/* 104 - Page Up */
+    K_LEFTARROW,	/* 105 - Left */
+    K_RIGHTARROW,	/* 106 - Right */
+    K_END,		/* 107 - End */
+    K_DOWNARROW,	/* 108 - Down */
+    K_PGDN,		/* 109 - Page Down */
+    K_INS,		/* 110 - Insert */
+    K_DEL,		/* 111 - Delete */
+    0,			/* 112 - Macro */
+    0,			/* 113 - Mute */
+    0,			/* 114 - Volume Down */
+    0,			/* 115 - Volume Up */
+    K_POWER,		/* 116 - Power */
+    K_KP_EQUALS,	/* 117 - Keypad Equals */
+    0,			/* 118 - Keypad Plusminus */
+    K_PAUSE,		/* 119 - Pause */
+    0,			/* 120 - Scale */
+    0,			/* 121 - Keypad Comma */
+    0,			/* 122 - Hangeul */
+    0,			/* 123 - Hanja */
+    0,			/* 124 - Yen */
+    K_SUPER,		/* 125 - Left Meta */
+    K_SUPER,		/* 126 - Right Meta */
+    K_COMPOSE		/* 127 - Compose */
 };
 
 char event_name[30];
@@ -186,7 +219,6 @@ void PND_ReadEvents( int fd, int device )
 	}
 }
 
-/* See /usr/include/linux/input-event-codes.h */
 void PND_CheckEvent( struct input_event *event, int device )
 {
 	int sym, value;
@@ -203,63 +235,18 @@ void PND_CheckEvent( struct input_event *event, int device )
 		case EV_KEY:
 			switch( event->code )
 			{
-				case 103:
-					sym = K_UPARROW;
-					break;
-				case 108:
-					sym = K_DOWNARROW;
-					break;
-				case 105:
-					sym = K_LEFTARROW;
-					break;
-				case 106:
-					sym = K_RIGHTARROW;
-					break;
-#if 0
-				case 139:		// menu
-					sym = K_F1;
-					break;
-				case 56:	// start
-					sym = K_ENTER;
-					break;
-				case 29:	// select
-					sym = K_ESCAPE;
-					break;
-				case 104:	// up (y)
-					sym = 'y';
-					break;
-				case 102:	// right (a)
-					sym = 'a';
-					break;
-				case 109:	// down (x)
-					sym = 'x';
-					break;
-				case 107:	// left (b)
-					sym = 'b';
-					break;
-/*
-				case 54:	// left shoulder
-					sym = 'l';
-					break;
-				case 97:	// right shoulder
-					sym = 'r';
-					break;
-*/
-				case 54:
+				case BTN_LEFT:
 					sym = K_MOUSE1;
 					break;
-				case 97:
+				case BTN_RIGHT:
 					sym = K_MOUSE2;
 					break;
-#endif
-				case 0x110:
-					sym = K_MOUSE1;
+				case BTN_MIDDLE:
+					sym = K_MOUSE3;
 					break;
-				case 0x111:
-					sym = K_MOUSE2;
-					break;
+                                // Could handle more mouse buttons here
 				default:
-					if( keymap[event->code]>0 )
+					if( event->code < 128 && keymap[event->code]>0 )
 						sym = keymap[event->code];
 					break;
 			}
