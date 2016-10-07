@@ -450,6 +450,8 @@ void GLimp_Shutdown(void)
 	{
 		XDestroyWindow(dpy, win);
 		XCloseDisplay(dpy);
+	} else {
+		kms_teardown();
 	}
 }
 

@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <unistd.h>
+#include <termios.h>
 
 #include <xf86drm.h>
 #include <xf86drmMode.h>
@@ -42,6 +43,7 @@ struct drm_fb {
 
 static struct {
 	struct gbm_bo *bo;
+	struct termios t_orig;
 } state;
 
 static int init_drm(const char *path)
@@ -252,6 +254,23 @@ static void page_flip_handler(int fd, unsigned int frame,
 	*waiting_for_flip = 0;
 }
 
+static void disable_terminal_echo(void)
+{
+	// stty -echo equivalent to prevent junk in terminal
+	// don't forget to re-enable on exit
+	struct termios t;
+	tcgetattr(0, &state.t_orig);
+	t = state.t_orig;
+	t.c_lflag &= ~(ECHO|ICANON|ISIG);
+	t.c_iflag &= ~(IXON);
+	tcsetattr(0, TCSANOW, &t);
+}
+
+static void restore_terminal(void)
+{
+	tcsetattr(0, TCSANOW, &state.t_orig);
+}
+
 int kms_setup(const char *drm_device, const char *gbm_device, NativeDisplayType *native_display, EGLNativeWindowType *native_window)
 {
 	struct drm_fb *fb;
@@ -286,6 +305,8 @@ int kms_setup(const char *drm_device, const char *gbm_device, NativeDisplayType 
 		return ret;
 	}
 #endif
+	disable_terminal_echo();
+
 	*native_display = (NativeDisplayType)gbm.dev;
 	*native_window = (EGLNativeWindowType)gbm.surface;
 	return 0;
@@ -298,6 +319,7 @@ int kms_post_swap(void)
 	int waiting_for_flip = 1;
 	int ret;
 	struct drm_fb *fb;
+	char buf[4096];
 	drmEventContext evctx = {
 		.version = DRM_EVENT_CONTEXT_VERSION,
 		.page_flip_handler = page_flip_handler,
@@ -325,9 +347,10 @@ int kms_post_swap(void)
 		} else if (ret == 0) {
 			printf("select timeout!\n");
 			return -1;
-		} else if (FD_ISSET(0, &fds)) {
-			printf("user interrupted!\n");
-			break;
+		} else if (FD_ISSET(0, &fds)) { // Eat any terminal input
+			ret = read(0, buf, sizeof(buf));
+			if (ret < 0)
+				return ret;
 		}
 		drmHandleEvent(drm.fd, &evctx);
 	}
@@ -337,5 +360,12 @@ int kms_post_swap(void)
 	state.bo = next_bo;
 
 	return ret;
+}
+
+int kms_teardown(void)
+{
+	restore_terminal();
+	// TODO
+	return 0;
 }
 
