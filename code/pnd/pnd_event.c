@@ -82,7 +82,7 @@ keyNum_t keymap[128] =
 };
 
 char event_name[30];
-int fd_usbk, fd_usbm, fd_gpio, fd_pndk, fd_nub1, fd_nub2, fd_ts, rd, i, j, k;
+int fd_usbk, fd_usbm, rd, i, j, k;
 struct input_event ev[64];
 int version;
 unsigned short id[4];
@@ -91,23 +91,8 @@ char dev_name[256] = "Unknown";
 int absolute[5];
 int prevtime;
 
-char pnd_ts[20]   = "ADS784x Touchscreen";
-char pnd_nub1[9]  = "vsense66";
-char pnd_nub2[9]  = "vsense67";
-char pnd_key[19]  = "omap_twl4030keypad";
-char pnd_gpio[10] = "gpio-keys";
-
-#define DEV_TS	 0
-#define DEV_NUB1 1
-#define DEV_NUB2 2
-#define DEV_PNDK 3
-#define DEV_GPIO 4
 #define DEV_USBK 5
 #define DEV_USBM 6
-
-#define NUB1_CUTOFF 100
-#define NUB2_CUTOFF 5
-#define NUB2_SCALE  10
 
 int mx, my, buttonstate, lasttime;
 
@@ -116,24 +101,13 @@ void PND_Setup_Controls( void )
 	int event_key = 0;
 	int event_mouse = 0;
 
-	printf( "Setting up Pandora Controls\n" );
+	printf( "Setting up Evdev Controls\n" );
 
 	cvarKey = Cvar_Get("usbk", "0", 0);
 	cvarMouse = Cvar_Get("usbm", "0", 0);
 
 	event_key = cvarKey->value;
 	event_mouse = cvarMouse->value;
-
-	// Static Controls
-	// Pandora keyboard
-	fd_pndk = PND_OpenEventDeviceByName(pnd_key);
-	// Pandora buttons
-	fd_gpio = PND_OpenEventDeviceByName(pnd_gpio);
-	// Pandora touchscreen
-	fd_ts = PND_OpenEventDeviceByName(pnd_ts);
-	// Pandora analog nub's
-	fd_nub1 = PND_OpenEventDeviceByName(pnd_nub1);
-	fd_nub2 = PND_OpenEventDeviceByName(pnd_nub2);
 
 	// Dynamic Controls
 	// USB keyboard
@@ -152,18 +126,8 @@ void PND_Setup_Controls( void )
 
 void PND_Close_Controls( void )
 {
-	printf( "Closing Pandora Controls\n" );
+	printf( "Closing Evdev Controls\n" );
 
-	if( fd_pndk > 0 )
-		close(fd_pndk );
-	if( fd_gpio > 0 )
-		close(fd_gpio );
-	if( fd_ts > 0 )
-		close(fd_ts );
-	if( fd_nub1 > 0 )
-		close(fd_nub1 );
-	if( fd_nub2 > 0 )
-		close(fd_nub2 );
 	if( fd_usbk > 0 )
 		close(fd_usbk );
 	if( fd_usbm > 0 )
@@ -180,17 +144,13 @@ void PND_SendAllEvents( void )
 
 void PND_SendKeyEvents( void )
 {
-	PND_ReadEvents( fd_pndk, DEV_PNDK );
-	PND_ReadEvents( fd_gpio, DEV_GPIO );
 	PND_ReadEvents( fd_usbk, DEV_USBK );
-	PND_ReadEvents( fd_nub1, DEV_NUB1 );
 }
 
 void PND_SendRelEvents( void )
 {
-	PND_ReadEvents( fd_nub2, DEV_NUB2 );
 	PND_ReadEvents( fd_usbm, DEV_USBM );
-	
+
 	if ( (mx != 0 || my != 0) && (Sys_Milliseconds() - lasttime > 5) )
 	{
 		Com_QueueEvent( 0, SE_MOUSE, mx, my, 0, NULL ); 
@@ -200,7 +160,6 @@ void PND_SendRelEvents( void )
 
 void PND_SendAbsEvents( void )
 {
-	PND_ReadEvents( fd_ts,   DEV_TS );
 }
 
 void PND_ReadEvents( int fd, int device )
@@ -268,85 +227,6 @@ void PND_CheckEvent( struct input_event *event, int device )
 			}
 			break;
 		case EV_ABS:
-			switch( device )
-			{
-				case DEV_TS:
-#if 0
-					if( event->code == ABS_X ) {
-						rel_x = abs_x - value;
-						abs_x = value;
-					}
-					if( event->code == ABS_Y ) {
-						rel_y = abs_y - value;
-						abs_y = value;
-					}
-#endif
-					break;
-				case DEV_NUB1:
-					if( event->code == ABS_X ) {
-						//printf( "nub1 x %3d\n", value );
-						if( abs(value) > NUB1_CUTOFF ) {
-							if( value > 0 ) {
-								sym   = K_RIGHTARROW;
-								value = 1;
-							}
-							else if( value < 0 ) {
-								sym   = K_LEFTARROW;
-								value = 1;
-							}
-						}
-						else
-						{
-							sym = 0;
-							value = 0;
-							Com_QueueEvent(0, SE_KEY, K_RIGHTARROW, 0, 0, NULL);
-							Com_QueueEvent(0, SE_KEY, K_LEFTARROW, 0, 0, NULL);
-						}
-					}
-
-					if( event->code == ABS_Y ) {
-						//printf( "nub1 y %3d\n", value );
-						if( abs(value) > NUB1_CUTOFF ) {
-							if( value > 0 ) {
-							      	sym   = K_DOWNARROW;
-								value = 1;
-							}
-							else if( value < 0 ) {
-								sym   = K_UPARROW;
-								value = 1;
-							}
-						}
-						else
-						{
-							sym = 0;
-							value = 0;
-							Com_QueueEvent(0, SE_KEY, K_DOWNARROW, 0, 0, NULL);
-							Com_QueueEvent(0, SE_KEY, K_UPARROW, 0, 0, NULL);
-						}
-					}
-					break;
-				case DEV_NUB2:
-					if(event->code == ABS_X)
-					{
-						if( abs(value) > NUB2_CUTOFF ) {
-							mx = value / NUB2_SCALE;
-						}
-						else {
-							mx = 0;
-						}
-					}
-
-					if(event->code == ABS_Y)
-					{
-						if( abs(value) > NUB2_CUTOFF ) {
-							my = value / NUB2_SCALE;
-						}
-						else {
-							my = 0;
-						}
-					}
-					break;
-			}
 			break;
 	}
 
@@ -359,7 +239,6 @@ void PND_CheckEvent( struct input_event *event, int device )
 		Com_QueueEvent( 0, SE_MOUSE, rel_x, rel_y, 0, NULL ); 
 	}
 
-	//printf( "nub2 x %3d y %3d\n", nub2_x, nub2_y );
 }
 
 int PND_OpenEventDeviceByID( int event_id )
@@ -389,43 +268,4 @@ int PND_OpenEventDeviceByID( int event_id )
 	printf("Input device name: \"%s\"\n", dev_name);
 
 	return fd;
-}
-
-int PND_OpenEventDeviceByName( char device_name[] )
-{
-	int fd;
-
-	for (i = 0; 1; i++)
-	{
-		snprintf( event_name, sizeof(event_name), "/dev/input/event%d", i );
-		//printf( "Device: %s\n", event_name );
-		if ((fd = open(event_name, O_RDONLY |  O_NDELAY)) < 0) {
-			perror("ERROR: Could not open device");
-			return 0;
-		}
-		if (fd < 0) break; /* no more devices */
-
-		ioctl(fd, EVIOCGNAME(sizeof(dev_name)), dev_name);
-		if (strcmp(dev_name, device_name) == 0)
-		{
-			if (ioctl(fd, EVIOCGVERSION, &version)) {
-				perror("evtest: can't get version");
-				return 0;
-			}
-
-			printf("Input driver version is %d.%d.%d\n",
-				version >> 16, (version >> 8) & 0xff, version & 0xff);
-
-			ioctl(fd, EVIOCGID, id);
-			printf("Input device ID: bus 0x%x vendor 0x%x product 0x%x version 0x%x\n",
-				id[ID_BUS], id[ID_VENDOR], id[ID_PRODUCT], id[ID_VERSION]);
-
-			ioctl(fd, EVIOCGNAME(sizeof(dev_name)), dev_name);
-			printf("Input device name: \"%s\"\n", dev_name);
-		  
-			return fd;
-		}
-		close(fd); /* we don't need this device */
-	}
-	return 0;
 }
