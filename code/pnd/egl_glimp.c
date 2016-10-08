@@ -21,6 +21,7 @@
 #ifdef USE_X11
 Display *dpy = NULL;
 Window win = 0;
+Screen *screen = NULL;
 #endif
 NativeDisplayType nativeDisplay = NULL;
 EGLNativeWindowType nativeWindow = 0;
@@ -119,6 +120,17 @@ static Cursor Sys_XCreateNullCursor(Display *display, Window root)
 	XFreePixmap(display,cursormask);
 	XFreeGC(display,gc);
 	return cursor;
+}
+
+static void make_display_x11()
+{
+        if (!(dpy = XOpenDisplay(NULL))) {
+                printf("Error: couldn't open display \n");
+                assert(0);
+        }
+        screen = XDefaultScreenOfDisplay(dpy);
+
+        nativeDisplay = (NativeDisplayType) dpy;
 }
 
 /*
@@ -338,9 +350,6 @@ static void GLimp_InitExtensions( void )
 
 void GLimp_Init(void)
 {
-#ifdef USE_X11
-	Screen *screen = NULL;
-#endif
 	EGLint major, minor;
 
 	ri.Printf(PRINT_ALL, "Initializing OpenGL subsystem\n");
@@ -360,13 +369,7 @@ void GLimp_Init(void)
 #ifdef USE_X11
 	if (pandora_driver_mode_x11)
 	{
-		if (!(dpy = XOpenDisplay(NULL))) {
-			printf("Error: couldn't open display \n");
-			assert(0);
-		}
-		screen = XDefaultScreenOfDisplay(dpy);
-
-		nativeDisplay = (NativeDisplayType) dpy;
+		make_display_x11();
 	}
 	else
 #endif
