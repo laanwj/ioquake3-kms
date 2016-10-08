@@ -46,3 +46,24 @@ seta x11 "1"
 ```
 Note that this does not affect the input subsystem, just the rendering.
 
+Game data
+------------
+Install a suitable set of game data (pk3) like the original Quake3 or
+openarena and put it in `~/.q3a/baseq3`.
+
+Note:
+
+- Tested with Quake3 1.32 point release.
+
+- Tested with following pk3s:
+
+    7ce8b3910620cd50a09e4f1100f426e8c6180f68895d589f80e6bd95af54bcae  pak0.pk3
+    d4ffd60b4b414c3419499e321b6f5c2e933cf082df85823ad2d6ae2f803e1682  pak1.pk3
+    ccae938a2f13a03b24902d675181d516a431699701ed88023a307f34b5bcd58c  pak2.pk3
+    d03c0a0e06b99f9ecca2be7389f57faed406e85f7c09b9c56afdfa53ba25e312  pak3.pk3
+    af5f6d5c82fe4440ae0bb660f0648d1fa1731a9e8305a9eb652aa243428697f1  pak4.pk3
+    69f87070ca7719e252a3ba97e6483f6663939c987ede550d1268d4d9a07b45bc  pak5.pk3
+    bb4f0ae2bf603b050fb665436d3178ce7c1c20360e67bacf7c14d93daff38daf  pak6.pk3
+    de6283ce23e3486a2622c5dbf73d3721a59f24debd380e90f43a97d952fea283  pak7.pk3
+    812c9e97f231e89cefede3848c6110b7bd34245093af6f22c2cacde3e6b15663  pak8.pk3
+
