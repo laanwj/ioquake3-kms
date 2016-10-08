@@ -31,13 +31,6 @@ EGLSurface eglSurface = NULL;
 int pandora_driver_mode_x11 = 0;
 cvar_t* cvarPndMode;
 
-#ifdef USE_X11
-int Sys_XTimeToSysTime(Time xtime)
-{
-	return Sys_Milliseconds();
-}
-#endif
-
 static char *GLimp_StringErrors[] = {
 	"EGL_SUCCESS",
 	"EGL_NOT_INITIALIZED",
@@ -70,6 +63,11 @@ static void GLimp_HandleError(void)
 }
 
 #ifdef USE_X11
+int Sys_XTimeToSysTime(Time xtime)
+{
+	return Sys_Milliseconds();
+}
+
 #define _NET_WM_STATE_REMOVE        0	/* remove/unset property */
 #define _NET_WM_STATE_ADD           1	/* add/set property */
 #define _NET_WM_STATE_TOGGLE        2	/* toggle property  */
@@ -122,6 +120,36 @@ static Cursor Sys_XCreateNullCursor(Display *display, Window root)
 	XFreeGC(display,gc);
 	return cursor;
 }
+
+/*
+ * Create an RGB, double-buffered window.
+ * Return the window and context handles.
+ */
+static void make_window_x11(Display * dpy, Screen * scr)
+{
+	XWindowAttributes WinAttr;
+	int XResult = BadImplementation;
+	int blackColour;
+	blackColour = BlackPixel(dpy, DefaultScreen(dpy));
+	win =
+	    XCreateSimpleWindow(dpy, DefaultRootWindow(dpy), 0, 0, 1, 1, 0,
+				blackColour, blackColour);
+	XStoreName(dpy, win, WINDOW_CLASS_NAME);
+
+	XSelectInput(dpy, win, X_MASK);
+
+	if (!(XResult = XGetWindowAttributes(dpy, win, &WinAttr)))
+		GLimp_HandleError();
+
+	GLimp_DisableComposition();
+	XMapWindow(dpy, win);
+	GLimp_DisableComposition();
+
+	XDefineCursor(dpy, win, Sys_XCreateNullCursor(dpy, win));
+
+	XFlush(dpy);
+	nativeWindow = (EGLNativeWindowType) win;
+}
 #endif
 
 #define MAX_NUM_CONFIGS 4
@@ -130,23 +158,13 @@ static Cursor Sys_XCreateNullCursor(Display *display, Window root)
  * Create an RGB, double-buffered window.
  * Return the window and context handles.
  */
-#ifdef USE_X11
-static void make_window(Display * dpy, Screen * scr, EGLDisplay eglDisplay,
+static void init_window_egl(EGLDisplay eglDisplay,
 			EGLSurface * winRet, EGLContext * ctxRet)
-#else
-static void make_window(EGLDisplay eglDisplay,
-			EGLSurface * winRet, EGLContext * ctxRet)
-#endif
 {
 	EGLSurface eglSurface = EGL_NO_SURFACE;
 	EGLContext eglContext;
 	EGLConfig configs[MAX_NUM_CONFIGS];
 	EGLint config_count;
-#ifdef USE_X11
-	XWindowAttributes WinAttr;
-	int XResult = BadImplementation;
-	int blackColour;
-#endif
 	EGLint cfg_attribs[] = {
 		/* RGB565 */
 		EGL_BUFFER_SIZE, 16,
@@ -162,31 +180,6 @@ static void make_window(EGLDisplay eglDisplay,
 		EGL_NONE
 	};
 	EGLint i;
-
-#ifdef USE_X11
-	if (pandora_driver_mode_x11)
-	{
-		blackColour = BlackPixel(dpy, DefaultScreen(dpy));
-		win =
-		    XCreateSimpleWindow(dpy, DefaultRootWindow(dpy), 0, 0, 1, 1, 0,
-					blackColour, blackColour);
-		XStoreName(dpy, win, WINDOW_CLASS_NAME);
-
-		XSelectInput(dpy, win, X_MASK);
-
-		if (!(XResult = XGetWindowAttributes(dpy, win, &WinAttr)))
-			GLimp_HandleError();
-
-		GLimp_DisableComposition();
-		XMapWindow(dpy, win);
-		GLimp_DisableComposition();
-
-		XDefineCursor(dpy, win, Sys_XCreateNullCursor(dpy, win));
-
-		XFlush(dpy);
-		nativeWindow = (EGLNativeWindowType) win;
-	}
-#endif
 
 	if (!eglGetConfigs(eglDisplay, configs, MAX_NUM_CONFIGS, &config_count))
 		GLimp_HandleError();
@@ -347,7 +340,6 @@ void GLimp_Init(void)
 {
 #ifdef USE_X11
 	Screen *screen = NULL;
-	Visual *vis;
 #endif
 	EGLint major, minor;
 
@@ -373,7 +365,6 @@ void GLimp_Init(void)
 			assert(0);
 		}
 		screen = XDefaultScreenOfDisplay(dpy);
-		vis = DefaultVisual(dpy, DefaultScreen(dpy));
 
 		nativeDisplay = (NativeDisplayType) dpy;
 	}
@@ -385,15 +376,19 @@ void GLimp_Init(void)
 			assert(0);
 		}
 	}
-	
+
 	eglDisplay = eglGetDisplay(nativeDisplay);
 	if (!eglInitialize(eglDisplay, &major, &minor))
 		GLimp_HandleError();
 #ifdef USE_X11
-	make_window(dpy, screen, eglDisplay, &eglSurface, &eglContext);
-#else
-	make_window(eglDisplay, &eglSurface, &eglContext);
+	if (pandora_driver_mode_x11)
+	{
+            make_window_x11(dpy, screen);
+	}
 #endif
+
+	init_window_egl(eglDisplay, &eglSurface, &eglContext);
+
 #ifdef USE_X11
 	if (pandora_driver_mode_x11)
 	{
