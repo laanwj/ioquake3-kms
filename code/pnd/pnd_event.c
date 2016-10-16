@@ -192,19 +192,26 @@ void PND_CheckEvent( struct input_event *event, int device )
 	switch( event->type )
 	{
 		case EV_KEY:
-			switch( event->code )
+			switch( device )
 			{
-				case BTN_LEFT:
-					sym = K_MOUSE1;
+				case DEV_USBM:
+					switch( event->code )
+					{
+						case BTN_LEFT:
+							sym = K_MOUSE1;
+							break;
+						case BTN_RIGHT:
+							sym = K_MOUSE2;
+							break;
+						case BTN_MIDDLE:
+							sym = K_MOUSE3;
+							break;
+						// Could handle more mouse buttons here
+						default:
+							break;
+					}
 					break;
-				case BTN_RIGHT:
-					sym = K_MOUSE2;
-					break;
-				case BTN_MIDDLE:
-					sym = K_MOUSE3;
-					break;
-                                // Could handle more mouse buttons here
-				default:
+				case DEV_USBK:
 					if( event->code < 128 && keymap[event->code]>0 )
 						sym = keymap[event->code];
 					break;
