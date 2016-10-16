@@ -67,3 +67,10 @@ Note:
     de6283ce23e3486a2622c5dbf73d3721a59f24debd380e90f43a97d952fea283  pak7.pk3
     812c9e97f231e89cefede3848c6110b7bd34245093af6f22c2cacde3e6b15663  pak8.pk3
 
+Debian
+----------
+
+May need these dependencies:
+
+    apt-get install libgles1-mesa-dev libgbm-dev
+

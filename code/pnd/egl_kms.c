@@ -44,6 +44,8 @@ struct drm_fb {
 static struct {
 	struct gbm_bo *bo;
 	struct termios t_orig;
+	bool mode_set;
+	drmModeCrtcPtr orig_crtc;
 } state;
 
 static int init_drm(const char *path)
@@ -273,7 +275,6 @@ static void restore_terminal(void)
 
 int kms_setup(const char *drm_device, const char *gbm_device, NativeDisplayType *native_display, EGLNativeWindowType *native_window)
 {
-	struct drm_fb *fb;
 	int ret;
 
 	if (drm_device && gbm_device) {
@@ -293,19 +294,10 @@ int kms_setup(const char *drm_device, const char *gbm_device, NativeDisplayType 
 		printf("failed to initialize GBM\n");
 		return ret;
 	}
-#if 0
-	state.bo = gbm_surface_lock_front_buffer(gbm.surface);
-	fb = drm_fb_get_from_bo(state.bo);
-
-	/* set mode: */
-	ret = drmModeSetCrtc(drm.fd, drm.crtc_id, fb->fb_id, 0, 0,
-			&drm.connector_id, 1, drm.mode);
-	if (ret) {
-		printf("failed to set mode: %s\n", strerror(errno));
-		return ret;
-	}
-#endif
 	disable_terminal_echo();
+
+	state.mode_set = false;
+	state.orig_crtc = drmModeGetCrtc(drm.fd, drm.crtc_id);
 
 	*native_display = (NativeDisplayType)gbm.dev;
 	*native_window = (EGLNativeWindowType)gbm.surface;
@@ -327,6 +319,18 @@ int kms_post_swap(void)
 
 	next_bo = gbm_surface_lock_front_buffer(gbm.surface);
 	fb = drm_fb_get_from_bo(next_bo);
+
+	if (!state.mode_set) { // Set mode only once
+		/* set mode: */
+		printf("Set mode\n");
+		ret = drmModeSetCrtc(drm.fd, drm.crtc_id, fb->fb_id, 0, 0,
+				&drm.connector_id, 1, drm.mode);
+		if (ret) {
+			printf("failed to set mode: %s\n", strerror(errno));
+			return ret;
+		}
+		state.mode_set = true;
+	}
 
 	ret = drmModePageFlip(drm.fd, drm.crtc_id, fb->fb_id,
 			DRM_MODE_PAGE_FLIP_EVENT, &waiting_for_flip);
@@ -364,8 +368,16 @@ int kms_post_swap(void)
 
 int kms_teardown(void)
 {
+	int ret;
 	restore_terminal();
-	// TODO
+	// Restore original mode
+	ret = drmModeSetCrtc(drm.fd, state.orig_crtc->crtc_id, state.orig_crtc->buffer_id,
+			state.orig_crtc->x, state.orig_crtc->y,
+			&drm.connector_id, 1, &state.orig_crtc->mode);
+	if (ret) {
+		printf("failed to restore original mode: %s\n", strerror(errno));
+		return -1;
+	}
 	return 0;
 }
 
