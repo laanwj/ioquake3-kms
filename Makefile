@@ -291,6 +291,7 @@ ifeq ($(PLATFORM),linux)
       -fstrength-reduce
     OPTIMIZE = $(OPTIMIZEVM) -ffast-math
     HAVE_VM_COMPILED = true
+    BASE_CFLAGS += -I/usr/include/libdrm/
   else
   ifeq ($(ARCH),i386)
     OPTIMIZEVM = -O3 -march=i586 -fomit-frame-pointer \
@@ -298,6 +299,7 @@ ifeq ($(PLATFORM),linux)
       -falign-functions=2 -fstrength-reduce
     OPTIMIZE = $(OPTIMIZEVM) -ffast-math
     HAVE_VM_COMPILED=true
+    BASE_CFLAGS += -I/usr/include/libdrm/
   else
   ifeq ($(ARCH),ppc)
     BASE_CFLAGS += -maltivec
@@ -316,11 +318,10 @@ ifeq ($(PLATFORM),linux)
     BASE_CFLAGS += -DPANDORA -I$(PNDSDK)/usr/include
     OPTIMIZE += -O3 -march=armv7-a -mcpu=cortex-a8 -mtune=cortex-a8 \
 			-mfpu=neon -ftree-vectorize -ffast-math -fomit-frame-pointer -fno-strict-aliasing -fsingle-precision-constant
-    SDL_CFLAGS=`$(PNDSDK)/usr/bin/sdl-config --cflags`
-    SDL_LIBS=`$(PNDSDK)/usr/bin/sdl-config --libs`
-    BASE_CFLAGS += -I$(PNDSDK)/usr/include/EGL/ -I$(PNDSDK)/usr/include/GLES/
+    BASE_CFLAGS += -I$(PNDSDK)/usr/include/EGL/ -I$(PNDSDK)/usr/include/GLES/ -I$(PNDSDK)/usr/include/libdrm/
     OPTIMIZEVM = -O3 -march=armv7-a -mcpu=cortex-a8 -mtune=cortex-a8 \
 			-mfpu=neon -ftree-vectorize -ffast-math -fomit-frame-pointer -fno-strict-aliasing -fsingle-precision-constant
+    LDFLAGS += -L$(PNDSDK)/usr/lib -Wl,-rpath-link,$(PNDSDK)/usr/lib
   endif
   endif
   endif
@@ -336,11 +337,12 @@ ifeq ($(PLATFORM),linux)
   THREAD_LIBS=-lpthread
   LIBS=-ldl -lm
 
-  BASE_CFLAGS += -DPANDORA -g -I/usr/include/drm
-  CLIENT_LIBS = $(SDL_LIBS) -lEGL -lGLESv1_CM -lX11 -lgbm -ldrm
+  BASE_CFLAGS += -DPANDORA -g
+  CLIENT_LIBS = $(SDL_LIBS) -lEGL -lGLESv1_CM -lgbm -ldrm
 
-  ifeq ($(ARCH),arm)
-    CLIENT_LIBS = $(SDL_LIBS) -lGLESv1_CM -lX11
+  ifeq ($(USE_X11),1)
+    CLIENT_LIBS = -lX11
+    BASE_CFLAGS += -DUSE_X11
   endif
 
   ifeq ($(USE_OPENAL),1)
