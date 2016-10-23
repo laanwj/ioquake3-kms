@@ -42,6 +42,7 @@ struct drm_fb {
 };
 
 static struct {
+	bool terminal;
 	struct gbm_bo *bo;
 	struct termios t_orig;
 	bool mode_set;
@@ -273,7 +274,7 @@ static void restore_terminal(void)
 	tcsetattr(0, TCSANOW, &state.t_orig);
 }
 
-int kms_setup(const char *drm_device, const char *gbm_device, NativeDisplayType *native_display, EGLNativeWindowType *native_window)
+int kms_setup(const char *drm_device, const char *gbm_device, int terminal, NativeDisplayType *native_display, EGLNativeWindowType *native_window)
 {
 	int ret;
 
@@ -294,8 +295,10 @@ int kms_setup(const char *drm_device, const char *gbm_device, NativeDisplayType 
 		printf("failed to initialize GBM\n");
 		return ret;
 	}
-	disable_terminal_echo();
-
+	if (terminal) {
+		disable_terminal_echo();
+	}
+	state.terminal = terminal;
 	state.mode_set = false;
 	state.orig_crtc = drmModeGetCrtc(drm.fd, drm.crtc_id);
 
@@ -341,7 +344,9 @@ int kms_post_swap(void)
 
 	while (waiting_for_flip) {
 		FD_ZERO(&fds);
-		FD_SET(0, &fds);
+		if (state.terminal) {
+			FD_SET(0, &fds);
+		}
 		FD_SET(drm.fd, &fds);
 
 		ret = select(drm.fd + 1, &fds, NULL, NULL, NULL);
@@ -369,7 +374,9 @@ int kms_post_swap(void)
 int kms_teardown(void)
 {
 	int ret;
-	restore_terminal();
+	if (state.terminal) {
+		restore_terminal();
+	}
 	// Restore original mode
 	ret = drmModeSetCrtc(drm.fd, state.orig_crtc->crtc_id, state.orig_crtc->buffer_id,
 			state.orig_crtc->x, state.orig_crtc->y,

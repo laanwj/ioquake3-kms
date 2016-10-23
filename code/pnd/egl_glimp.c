@@ -31,6 +31,7 @@ EGLSurface eglSurface = NULL;
 
 int pandora_driver_mode_x11 = 0;
 cvar_t* cvarPndMode;
+cvar_t* cvarKmsTerminal;
 
 static char *GLimp_StringErrors[] = {
 	"EGL_SUCCESS",
@@ -355,6 +356,7 @@ void GLimp_Init(void)
 	ri.Printf(PRINT_ALL, "Initializing OpenGL subsystem\n");
 
 	cvarPndMode = ri.Cvar_Get("x11", "0", 0);
+	cvarKmsTerminal = ri.Cvar_Get("kmsterm", "0", 0);
 	pandora_driver_mode_x11 = cvarPndMode->value;
 #ifndef USE_X11
 	if (pandora_driver_mode_x11)
@@ -374,7 +376,7 @@ void GLimp_Init(void)
 	else
 #endif
 	{
-		if (kms_setup(NULL, NULL, &nativeDisplay, &nativeWindow)) {
+		if (kms_setup(NULL, NULL, cvarKmsTerminal->value, &nativeDisplay, &nativeWindow)) {
 			printf("Error: couldn't open KMS\n");
 			assert(0);
 		}

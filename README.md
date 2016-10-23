@@ -4,8 +4,8 @@ kmsquake3
 A version of ioquake3 that runs on bare Linux KMS, with raw evdev for
 input: no X11, no Wayland. OpenGL ES 1.0 is used for rendering, through EGL.
 
-Configuring
--------------
+Configuring input
+-------------------
 
 Currently event sources have to be configured explicitly for input to work.
 
@@ -32,6 +32,18 @@ E.g. `10` for `input10`, `4` for `input4` etc.
 
 Make sure that the user has direct access to the input devices
 (group `input` in many distributions).
+
+Blocking console input
+-----------------------
+
+Another setting relevant to input is `kmsterm`. This is useful when launching
+ioquake3 from the Linux console, to prevent keyboard input from ending up in
+the terminal: it will set up the terminal to eat all console input during the
+kms event loop. It defaults to `0`.
+
+```
+seta kmsterm "1"
+```
 
 X11 mode
 ----------
