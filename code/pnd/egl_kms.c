@@ -280,8 +280,8 @@ int kms_setup(const char *drm_device, const char *gbm_device, int terminal, Nati
 
 	if (drm_device && gbm_device) {
 		/* if both devices are the same, open it once only */
-		if (strcmp(drm_device, gbm_device) != 0)
-			gbm_device = drm_device;
+		if (strcmp(drm_device, gbm_device) == 0)
+			gbm_device = NULL;
 	}
 
 	ret = init_drm(drm_device);
