@@ -24,9 +24,80 @@ static keyNum_t keymap[128] =
     'q', 'w', 'e', 'r',	't', 'y', 'u', 'i', 'o', 'p', '[', ']', /* 16..27 */
     K_ENTER,		/* 28 - Enter */
     K_CTRL,		/* 29 - Left Control */
-    'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', '`', /* 30..41 */
+    'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', K_CONSOLE, /* 30..41 */
     K_SHIFT,		/* 42 - Left shift */
     '\\', 'z', 'x', 'c', 'v', 'b', 'n',	'm', ',', '.', '/', /* 43..53 */
+    K_SHIFT,		/* 54 - Right shift */
+    K_KP_STAR,		/* 55 - Keypad asterisk */
+    K_ALT,		/* 56 - Left alt */
+    K_SPACE,		/* 57 - Space bar */
+    K_CAPSLOCK,		/* 58 - Caps lock */
+    K_F1, K_F2, K_F3, K_F4, K_F5, K_F6, K_F7, K_F8, K_F9, K_F10, /* 59..68 */
+    K_KP_NUMLOCK,	/* 69 - Num lock*/
+    K_SCROLLOCK,	/* 70 - Scroll Lock */
+    K_KP_HOME,		/* 71 - Keypad Home key / 7 */
+    K_KP_UPARROW,	/* 72 - Keypad Up Arrow / 8 */
+    K_KP_PGUP,		/* 73 - Keypad Page Up / 9 */
+    K_KP_MINUS,		/* 74 - Keypad - */
+    K_KP_LEFTARROW,	/* 75 - Keypad Left Arrow / 4 */
+    K_KP_5,		/* 76 - Keypad 5 */
+    K_KP_RIGHTARROW,	/* 77 - Keypad Right Arrow / 6 */
+    K_KP_PLUS,		/* 78 - Keypad + */
+    K_KP_END,		/* 79 - Keypad End key / 1 */
+    K_KP_DOWNARROW,	/* 80 - Keypad Down Arrow / 2 */
+    K_KP_PGDN,		/* 81 - Keypad Page Down / 3 */
+    K_KP_INS,		/* 82 - Keypad Insert Key / 0 */
+    K_KP_DEL,		/* 83 - Keypad Delete Key / . */
+    0,   0,   0,	/* 84, 85, 86 */
+    K_F11,		/* 87 - F11 Key */
+    K_F12,		/* 88 - F12 Key */
+    0, 0, 0, 0, 0, 0, 0,/* 89 - 95 */
+    K_KP_ENTER,		/* 96 - Keypad Enter */
+    K_CTRL,		/* 97 - Right Control */
+    K_KP_SLASH,		/* 98 - Keypad Slash */
+    0,			/* 99 - Sysrq */
+    K_ALT,		/* 100 - Right Alt */
+    10,			/* 101 - Line Feed */
+    K_HOME,		/* 102 - Home */
+    K_UPARROW,		/* 103 - Up */
+    K_PGUP,		/* 104 - Page Up */
+    K_LEFTARROW,	/* 105 - Left */
+    K_RIGHTARROW,	/* 106 - Right */
+    K_END,		/* 107 - End */
+    K_DOWNARROW,	/* 108 - Down */
+    K_PGDN,		/* 109 - Page Down */
+    K_INS,		/* 110 - Insert */
+    K_DEL,		/* 111 - Delete */
+    0,			/* 112 - Macro */
+    0,			/* 113 - Mute */
+    0,			/* 114 - Volume Down */
+    0,			/* 115 - Volume Up */
+    K_POWER,		/* 116 - Power */
+    K_KP_EQUALS,	/* 117 - Keypad Equals */
+    0,			/* 118 - Keypad Plusminus */
+    K_PAUSE,		/* 119 - Pause */
+    0,			/* 120 - Scale */
+    0,			/* 121 - Keypad Comma */
+    0,			/* 122 - Hangeul */
+    0,			/* 123 - Hanja */
+    0,			/* 124 - Yen */
+    K_SUPER,		/* 125 - Left Meta */
+    K_SUPER,		/* 126 - Right Meta */
+    K_COMPOSE		/* 127 - Compose */
+};
+static keyNum_t keymap_shift[128] =
+{
+    0,			/* 0 - Reserved */
+    K_ESCAPE,		/* 1 - Escape */
+    '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', /* 2..13 */
+    K_BACKSPACE,	/* 14 - Backspace */
+    K_TAB,		/* 15 - Tab */
+    'Q', 'W', 'E', 'R',	'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', /* 16..27 */
+    K_ENTER,		/* 28 - Enter */
+    K_CTRL,		/* 29 - Left Control */
+    'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', '"', K_CONSOLE, /* 30..41 */
+    K_SHIFT,		/* 42 - Left shift */
+    '|', 'Z', 'X', 'C', 'V', 'B', 'N',	'M', '<', '>', '?', /* 43..53 */
     K_SHIFT,		/* 54 - Right shift */
     K_KP_STAR,		/* 55 - Keypad asterisk */
     K_ALT,		/* 56 - Left alt */
@@ -90,6 +161,7 @@ static keyNum_t keymap[128] =
 
 static int input_fds[MAX_INPUT_FDS];
 static int num_input_fds = 0;
+static int shift_pressed = 0;
 
 static void IN_Setup_Controls(void);
 static void IN_Close_Controls(void);
@@ -111,6 +183,7 @@ static void IN_Setup_Controls(void)
 		printf("Could not open /dev/input directory\n");
 		return;
 	}
+        num_input_fds = 0;
 
 	while (!readdir_r(dirp, &entry, &result) && result != NULL && num_input_fds < MAX_INPUT_FDS) {
 		if (strncmp(result->d_name, "event", 5) ==  0) {
@@ -124,6 +197,8 @@ static void IN_Setup_Controls(void)
 	}
 
 	closedir(dirp);
+
+        shift_pressed = 0;
 }
 
 static void IN_Close_Controls(void)
@@ -154,7 +229,7 @@ static void IN_SendAllEvents(void)
 
 static void IN_CheckEvent( struct input_event *event, int device )
 {
-	int sym, value;
+	int sym, sym_shift, value;
 	long rel_x, rel_y;
 
 	//printf( "Device %d Type %d Code %d Value %d\n", device, event->type, event->code, event->value );
@@ -162,6 +237,7 @@ static void IN_CheckEvent( struct input_event *event, int device )
 	rel_x	= 0;
 	rel_y	= 0;
 	sym	= 0;
+        sym_shift = 0;
 	value	= event->value;
 	switch(event->type)
 	{
@@ -186,8 +262,10 @@ static void IN_CheckEvent( struct input_event *event, int device )
 			sym = K_MOUSE5;
 			break;
 		default:
-			if( event->code < 128 && keymap[event->code]>0 )
+			if( event->code < 128 && keymap[event->code]>0 ) {
 				sym = keymap[event->code];
+                                sym_shift = keymap_shift[event->code];
+                        }
 		}
 		break;
 	case EV_REL:
@@ -208,8 +286,13 @@ static void IN_CheckEvent( struct input_event *event, int device )
 
 	if(sym > 0) {
 		Com_QueueEvent(0, SE_KEY, sym, value, 0, NULL);
+                if (sym == K_SHIFT) {
+                    shift_pressed = value;
+                }
 	}
-
+	if(sym > 0 && sym < 128 && value) {
+		Com_QueueEvent(0, SE_CHAR, shift_pressed ? sym_shift : sym, 0, 0, NULL);
+	}
 	if(rel_x != 0 || rel_y != 0) {
 		Com_QueueEvent(0, SE_MOUSE, rel_x, rel_y, 0, NULL);
 	}
@@ -269,5 +352,6 @@ void IN_Shutdown(void)
 
 void IN_Restart(void)
 {
+	IN_Close_Controls();
 	IN_Init();
 }
