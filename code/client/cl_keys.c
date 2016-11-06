@@ -470,6 +470,14 @@ void Field_KeyDownEvent( field_t *edit, int key ) {
 			key_overstrikeMode = !key_overstrikeMode;
 			break;
 
+		case K_BACKSPACE:
+			if ( edit->cursor > 0 && edit->cursor <= len ) {
+				memmove( edit->buffer + edit->cursor - 1,
+					edit->buffer + edit->cursor, len - (edit->cursor - 1));
+				edit->cursor--;
+			}
+			break;
+
 		default:
 			break;
 	}
