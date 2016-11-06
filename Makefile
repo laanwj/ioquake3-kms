@@ -1592,9 +1592,7 @@ endif
 Q3POBJ += \
    $(B)/client/egl_glimp.o \
    $(B)/client/egl_kms.o \
-   $(B)/client/evdev_input.o \
-   $(B)/client/pnd_event.o
-#  $(B)/client/sdl_glimp.o
+   $(B)/client/evdev_input.o
 
 Q3POBJ_SMP += \
    $(Q3POBJ)
