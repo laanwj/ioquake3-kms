@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <linux/input.h>
+#include <poll.h>
 
 /* See linux/input-event-codes.h */
 static keyNum_t keymap[128] =
@@ -159,7 +160,7 @@ static keyNum_t keymap_shift[128] =
 
 #define MAX_INPUT_FDS 16
 
-static int input_fds[MAX_INPUT_FDS];
+static struct pollfd input_fds[MAX_INPUT_FDS];
 static int num_input_fds = 0;
 static int shift_pressed = 0;
 
@@ -191,8 +192,11 @@ static void IN_Setup_Controls(void)
 				printf("Input device name would overflow buffer: %s\n", result->d_name);
 			}
 			int fd = IN_OpenEventDeviceByPath(event_name);
-			if (fd >= 0)
-				input_fds[num_input_fds++] = fd;
+			if (fd >= 0) {
+				input_fds[num_input_fds].fd = fd;
+				input_fds[num_input_fds].events = POLLIN;
+				num_input_fds++;
+			}
 		}
 	}
 
@@ -207,22 +211,27 @@ static void IN_Close_Controls(void)
 	printf("Closing Evdev Controls\n");
 
 	for (i = 0; i < num_input_fds; ++i) {
-		close(input_fds[i]);
+		close(input_fds[i].fd);
 	}
 }
 
 static void IN_SendAllEvents(void)
 {
-	int i, j, rd;
+	int i, j, rd, ptr;
 	struct input_event ev[64];
 
+	if (poll(input_fds, num_input_fds, 0) < 0) {
+		printf("Input: poll() error\n");
+	}
 	for (j = 0; j < num_input_fds; ++j) {
-		if ((rd = read(input_fds[j], ev, sizeof(struct input_event) * 64)) >= 0)
-		{
-			for (i = 0; i < rd / sizeof(struct input_event); i++)
-			{
+		if ((input_fds[j].revents & POLLIN) && (rd = read(input_fds[j].fd, ev, sizeof(struct input_event) * 64)) >= 0) {
+			for (i = 0,ptr = 0; ptr < rd; i++,ptr+=sizeof(struct input_event)) {
 				IN_CheckEvent(&ev[i], j);
 			}
+			if (ptr != rd) {
+				printf("Input: Got incomplete record\n");
+			}
+			input_fds[i].revents = 0;
 		}
 	}
 }
@@ -317,15 +326,15 @@ static int IN_OpenEventDeviceByPath( const char *event_name )
 		return -1;
 	}
 
-	printf("Input driver version is %d.%d.%d\n",
+	printf("  Input driver version is %d.%d.%d\n",
 		version >> 16, (version >> 8) & 0xff, version & 0xff);
 
 	ioctl(fd, EVIOCGID, id);
-	printf("Input device ID: bus 0x%x vendor 0x%x product 0x%x version 0x%x\n",
+	printf("  Input device ID: bus 0x%x vendor 0x%x product 0x%x version 0x%x\n",
 		id[ID_BUS], id[ID_VENDOR], id[ID_PRODUCT], id[ID_VERSION]);
 
 	ioctl(fd, EVIOCGNAME(sizeof(dev_name)), dev_name);
-	printf("Input device name: \"%s\"\n", dev_name);
+	printf("  Input device name: \"%s\"\n", dev_name);
 
 	return fd;
 }
